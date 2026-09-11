@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Редактор учебного расписания">
+  <title>Моё расписание</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" type="module"></script>
+</head>
+<body>
+  <header class="page-header">
+    <div class="header-inner">
+      <div>
+        <p class="eyebrow">учебная неделя</p>
+        <h1>Моё расписание</h1>
+        <p class="subtitle">Занятия, время и аудитории в одном месте</p>
+      </div>
+      <button class="primary-button" id="add-button" type="button">
+        <span aria-hidden="true">＋</span>
+        Добавить занятие
+      </button>
+    </div>
+  </header>
+
+  <main class="page-content">
+    <section class="toolbar" aria-label="Фильтр расписания">
+      <label for="day-filter">Показать</label>
+      <select id="day-filter">
+        <option value="">Всю неделю</option>
+        <option value="1">Понедельник</option>
+        <option value="2">Вторник</option>
+        <option value="3">Среда</option>
+        <option value="4">Четверг</option>
+        <option value="5">Пятница</option>
+        <option value="6">Суббота</option>
+        <option value="7">Воскресенье</option>
+      </select>
+      <p class="lesson-count" id="lesson-count" aria-live="polite"></p>
+    </section>
+
+    <div class="notice" id="notice" role="status" aria-live="polite" hidden></div>
+    <section class="schedule" id="schedule" aria-label="Расписание занятий" aria-busy="true"></section>
+  </main>
+
+  <dialog class="lesson-dialog" id="lesson-dialog" aria-labelledby="dialog-title">
+    <form class="lesson-form" id="lesson-form" novalidate>
+      <div class="dialog-header">
+        <div>
+          <p class="eyebrow">занятие</p>
+          <h2 id="dialog-title">Новое занятие</h2>
+        </div>
+        <button class="icon-button" id="close-dialog" type="button" aria-label="Закрыть окно">×</button>
+      </div>
+
+      <input id="lesson-id" type="hidden">
+
+      <div class="field full-width">
+        <label for="title">Название</label>
+        <input id="title" name="title" type="text" maxlength="80" autocomplete="off" aria-describedby="title-error" required>
+        <small id="title-error"></small>
+      </div>
+
+      <div class="field full-width">
+        <label for="day">День недели</label>
+        <select id="day" name="day" aria-describedby="day-error" required>
+          <option value="">Выберите день</option>
+          <option value="1">Понедельник</option>
+          <option value="2">Вторник</option>
+          <option value="3">Среда</option>
+          <option value="4">Четверг</option>
+          <option value="5">Пятница</option>
+          <option value="6">Суббота</option>
+          <option value="7">Воскресенье</option>
+        </select>
+        <small id="day-error"></small>
+      </div>
+
+      <div class="field">
+        <label for="start-time">Начало</label>
+        <input id="start-time" name="start_time" type="time" aria-describedby="start-time-error" required>
+        <small id="start-time-error"></small>
+      </div>
+
+      <div class="field">
+        <label for="end-time">Окончание</label>
+        <input id="end-time" name="end_time" type="time" aria-describedby="end-time-error" required>
+        <small id="end-time-error"></small>
+      </div>
+
+      <div class="field">
+        <label for="cabinet">Аудитория</label>
+        <input id="cabinet" name="cabinet" type="text" maxlength="30" autocomplete="off" aria-describedby="cabinet-error" required>
+        <small id="cabinet-error"></small>
+      </div>
+
+      <div class="field color-field">
+        <label for="color">Цвет</label>
+        <input id="color" name="color" type="color" value="#3768b5" aria-describedby="color-error">
+        <small id="color-error"></small>
+      </div>
+
+      <p class="form-error full-width" id="form-error" role="alert"></p>
+
+      <div class="dialog-actions full-width">
+        <button class="secondary-button" id="cancel-button" type="button">Отмена</button>
+        <button class="primary-button" id="save-button" type="submit">Сохранить</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>
