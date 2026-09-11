@@ -102,6 +102,12 @@ h1 {
   background: #2d5b9f;
 }
 
+button:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(55, 104, 181, 0.38);
+  outline-offset: 3px;
+}
+
 .primary-button:disabled {
   cursor: wait;
   opacity: 0.65;
@@ -238,10 +244,20 @@ h1 {
   overflow-wrap: anywhere;
 }
 
-.lesson-cabinet {
-  margin-bottom: 12px;
+.lesson-teacher,
+.lesson-room {
   color: #697389;
   font-size: 0.8rem;
+}
+
+.lesson-teacher {
+  margin-bottom: 4px;
+  color: #465269;
+  font-weight: 600;
+}
+
+.lesson-room {
+  margin-bottom: 12px;
 }
 
 .lesson-actions {
@@ -346,10 +362,6 @@ h1 {
 .field select:focus {
   border-color: #3768b5;
   box-shadow: 0 0 0 3px rgba(55, 104, 181, 0.14);
-}
-
-.field input[type="color"] {
-  padding: 5px;
 }
 
 .field small {

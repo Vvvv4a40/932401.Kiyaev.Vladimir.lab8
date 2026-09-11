@@ -14,7 +14,7 @@
       <div>
         <p class="eyebrow">учебная неделя</p>
         <h1>Моё расписание</h1>
-        <p class="subtitle">Занятия, время и аудитории в одном месте</p>
+        <p class="subtitle">Предметы, преподаватели и аудитории в одном месте</p>
       </div>
       <button class="primary-button" id="add-button" type="button">
         <span aria-hidden="true">＋</span>
@@ -56,12 +56,18 @@
       <input id="lesson-id" type="hidden">
 
       <div class="field full-width">
-        <label for="title">Название</label>
-        <input id="title" name="title" type="text" maxlength="80" autocomplete="off" aria-describedby="title-error" required>
-        <small id="title-error"></small>
+        <label for="subject">Предмет</label>
+        <input id="subject" name="subject" type="text" maxlength="80" autocomplete="off" aria-describedby="subject-error" required>
+        <small id="subject-error"></small>
       </div>
 
       <div class="field full-width">
+        <label for="teacher">Преподаватель</label>
+        <input id="teacher" name="teacher" type="text" maxlength="80" autocomplete="off" aria-describedby="teacher-error" required>
+        <small id="teacher-error"></small>
+      </div>
+
+      <div class="field">
         <label for="day">День недели</label>
         <select id="day" name="day" aria-describedby="day-error" required>
           <option value="">Выберите день</option>
@@ -77,6 +83,12 @@
       </div>
 
       <div class="field">
+        <label for="room">Аудитория</label>
+        <input id="room" name="room" type="text" maxlength="30" autocomplete="off" aria-describedby="room-error" required>
+        <small id="room-error"></small>
+      </div>
+
+      <div class="field">
         <label for="start-time">Начало</label>
         <input id="start-time" name="start_time" type="time" aria-describedby="start-time-error" required>
         <small id="start-time-error"></small>
@@ -86,18 +98,6 @@
         <label for="end-time">Окончание</label>
         <input id="end-time" name="end_time" type="time" aria-describedby="end-time-error" required>
         <small id="end-time-error"></small>
-      </div>
-
-      <div class="field">
-        <label for="cabinet">Аудитория</label>
-        <input id="cabinet" name="cabinet" type="text" maxlength="30" autocomplete="off" aria-describedby="cabinet-error" required>
-        <small id="cabinet-error"></small>
-      </div>
-
-      <div class="field color-field">
-        <label for="color">Цвет</label>
-        <input id="color" name="color" type="color" value="#3768b5" aria-describedby="color-error">
-        <small id="color-error"></small>
       </div>
 
       <p class="form-error full-width" id="form-error" role="alert"></p>

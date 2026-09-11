@@ -7,6 +7,7 @@ const days = [
   { value: 6, name: 'Суббота', short: 'Сб' },
   { value: 7, name: 'Воскресенье', short: 'Вс' }
 ];
+const subjectColors = ['#3768b5', '#7b4ca0', '#2f766d', '#a4475b', '#9a5a24', '#315f8d'];
 
 const schedule = document.querySelector('#schedule');
 const dayFilter = document.querySelector('#day-filter');
@@ -16,16 +17,20 @@ const dialog = document.querySelector('#lesson-dialog');
 const form = document.querySelector('#lesson-form');
 const dialogTitle = document.querySelector('#dialog-title');
 const saveButton = document.querySelector('#save-button');
-const lessonId = document.querySelector('#lesson-id');
-const titleInput = document.querySelector('#title');
+const addButton = document.querySelector('#add-button');
+const closeDialogButton = document.querySelector('#close-dialog');
+const cancelButton = document.querySelector('#cancel-button');
+const entryId = document.querySelector('#lesson-id');
+const subjectInput = document.querySelector('#subject');
+const teacherInput = document.querySelector('#teacher');
+const roomInput = document.querySelector('#room');
 const dayInput = document.querySelector('#day');
 const startTimeInput = document.querySelector('#start-time');
 const endTimeInput = document.querySelector('#end-time');
-const cabinetInput = document.querySelector('#cabinet');
-const colorInput = document.querySelector('#color');
 
-let lessons = [];
+let scheduleEntries = [];
 let noticeTimer;
+let dialogReturnFocus = addButton;
 
 async function apiRequest(url, options = {}) {
   const response = await fetch(url, {
@@ -63,21 +68,33 @@ function showNotice(message, type = 'success') {
   }, 3500);
 }
 
-function createLessonCard(lesson) {
+function getSubjectColor(subject) {
+  let hash = 0;
+  for (const character of subject.trim().toLowerCase()) {
+    hash = (hash * 31 + character.codePointAt(0)) >>> 0;
+  }
+  return subjectColors[hash % subjectColors.length];
+}
+
+function createScheduleCard(entry) {
   const card = document.createElement('article');
   card.className = 'lesson-card';
-  card.style.setProperty('--lesson-color', lesson.color);
+  card.style.setProperty('--lesson-color', getSubjectColor(entry.subject));
 
   const time = document.createElement('p');
   time.className = 'lesson-time';
-  time.textContent = `${lesson.start_time}–${lesson.end_time}`;
+  time.textContent = `${entry.start_time}–${entry.end_time}`;
 
   const title = document.createElement('h3');
-  title.textContent = lesson.title;
+  title.textContent = entry.subject;
 
-  const cabinet = document.createElement('p');
-  cabinet.className = 'lesson-cabinet';
-  cabinet.textContent = lesson.cabinet;
+  const teacher = document.createElement('p');
+  teacher.className = 'lesson-teacher';
+  teacher.textContent = entry.teacher;
+
+  const room = document.createElement('p');
+  room.className = 'lesson-room';
+  room.textContent = `Аудитория ${entry.room}`;
 
   const actions = document.createElement('div');
   actions.className = 'lesson-actions';
@@ -86,20 +103,20 @@ function createLessonCard(lesson) {
   editButton.type = 'button';
   editButton.className = 'text-button';
   editButton.dataset.action = 'edit';
-  editButton.dataset.id = lesson.id;
+  editButton.dataset.id = entry.id;
   editButton.textContent = 'Изменить';
-  editButton.setAttribute('aria-label', `Изменить занятие «${lesson.title}»`);
+  editButton.setAttribute('aria-label', `Изменить занятие «${entry.subject}»`);
 
   const deleteButton = document.createElement('button');
   deleteButton.type = 'button';
   deleteButton.className = 'text-button danger-button';
   deleteButton.dataset.action = 'delete';
-  deleteButton.dataset.id = lesson.id;
+  deleteButton.dataset.id = entry.id;
   deleteButton.textContent = 'Удалить';
-  deleteButton.setAttribute('aria-label', `Удалить занятие «${lesson.title}»`);
+  deleteButton.setAttribute('aria-label', `Удалить занятие «${entry.subject}»`);
 
   actions.append(editButton, deleteButton);
-  card.append(time, title, cabinet, actions);
+  card.append(time, title, teacher, room, actions);
   return card;
 }
 
@@ -122,8 +139,8 @@ function createDayColumn(day) {
   header.append(dayName, shortName);
   column.append(header);
 
-  const dayLessons = lessons.filter((lesson) => lesson.day === day.value);
-  if (dayLessons.length === 0) {
+  const dayEntries = scheduleEntries.filter((entry) => entry.day === day.value);
+  if (dayEntries.length === 0) {
     const empty = document.createElement('p');
     empty.className = 'day-empty';
     empty.textContent = 'Занятий нет';
@@ -133,9 +150,24 @@ function createDayColumn(day) {
 
   const list = document.createElement('div');
   list.className = 'lesson-list';
-  dayLessons.forEach((lesson) => list.append(createLessonCard(lesson)));
+  dayEntries.forEach((entry) => list.append(createScheduleCard(entry)));
   column.append(list);
   return column;
+}
+
+function getLessonCountText(count) {
+  const lastTwoDigits = count % 100;
+  const lastDigit = count % 10;
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 14) {
+    return `${count} занятий`;
+  }
+  if (lastDigit === 1) {
+    return `${count} занятие`;
+  }
+  if (lastDigit >= 2 && lastDigit <= 4) {
+    return `${count} занятия`;
+  }
+  return `${count} занятий`;
 }
 
 function renderSchedule() {
@@ -146,21 +178,19 @@ function renderSchedule() {
     : days;
 
   visibleDays.forEach((day) => schedule.append(createDayColumn(day)));
-  lessonCount.textContent = lessons.length === 1
-    ? '1 занятие'
-    : `${lessons.length} занятий`;
+  lessonCount.textContent = getLessonCountText(scheduleEntries.length);
   schedule.classList.toggle('single-day', Boolean(selectedDay));
   schedule.setAttribute('aria-busy', 'false');
 }
 
-async function loadLessons() {
+async function loadSchedule() {
   schedule.setAttribute('aria-busy', 'true');
   const query = dayFilter.value ? `?day=${dayFilter.value}` : '';
   try {
-    lessons = await apiRequest(`/api/lessons${query}`);
+    scheduleEntries = await apiRequest(`/api/schedule${query}`);
     renderSchedule();
   } catch (error) {
-    lessons = [];
+    scheduleEntries = [];
     schedule.replaceChildren();
     lessonCount.textContent = '';
     schedule.setAttribute('aria-busy', 'false');
@@ -186,12 +216,12 @@ function showFormErrors(error) {
   }
 
   const inputIds = {
-    title: 'title',
+    subject: 'subject',
+    teacher: 'teacher',
+    room: 'room',
     day: 'day',
     start_time: 'start-time',
-    end_time: 'end-time',
-    cabinet: 'cabinet',
-    color: 'color'
+    end_time: 'end-time'
   };
 
   for (const [field, message] of Object.entries(error.fields)) {
@@ -209,36 +239,37 @@ function showFormErrors(error) {
 
 function openCreateDialog() {
   form.reset();
-  lessonId.value = '';
-  colorInput.value = '#3768b5';
+  entryId.value = '';
   if (dayFilter.value) {
     dayInput.value = dayFilter.value;
   }
   clearErrors();
   dialogTitle.textContent = 'Новое занятие';
   saveButton.textContent = 'Сохранить';
+  dialogReturnFocus = addButton;
   dialog.showModal();
-  titleInput.focus();
+  subjectInput.focus();
 }
 
-function openEditDialog(id) {
-  const lesson = lessons.find((item) => item.id === id);
-  if (!lesson) {
+function openEditDialog(id, trigger) {
+  const entry = scheduleEntries.find((item) => item.id === id);
+  if (!entry) {
     return;
   }
 
   clearErrors();
-  lessonId.value = lesson.id;
-  titleInput.value = lesson.title;
-  dayInput.value = lesson.day;
-  startTimeInput.value = lesson.start_time;
-  endTimeInput.value = lesson.end_time;
-  cabinetInput.value = lesson.cabinet;
-  colorInput.value = lesson.color;
+  entryId.value = entry.id;
+  subjectInput.value = entry.subject;
+  teacherInput.value = entry.teacher;
+  roomInput.value = entry.room;
+  dayInput.value = entry.day;
+  startTimeInput.value = entry.start_time;
+  endTimeInput.value = entry.end_time;
   dialogTitle.textContent = 'Изменить занятие';
   saveButton.textContent = 'Сохранить изменения';
+  dialogReturnFocus = trigger;
   dialog.showModal();
-  titleInput.focus();
+  subjectInput.focus();
 }
 
 async function saveLesson(event) {
@@ -247,12 +278,12 @@ async function saveLesson(event) {
 
   const data = Object.fromEntries(new FormData(form));
   data.day = Number(data.day);
-  const id = lessonId.value;
+  const id = entryId.value;
   saveButton.disabled = true;
   saveButton.textContent = 'Сохраняю…';
 
   try {
-    const saved = await apiRequest(id ? `/api/lessons/${id}` : '/api/lessons', {
+    const saved = await apiRequest(id ? `/api/schedule/${id}` : '/api/schedule', {
       method: id ? 'PUT' : 'POST',
       body: JSON.stringify(data)
     });
@@ -260,7 +291,7 @@ async function saveLesson(event) {
     if (dayFilter.value && dayFilter.value !== String(saved.day)) {
       dayFilter.value = String(saved.day);
     }
-    await loadLessons();
+    await loadSchedule();
     showNotice(id ? 'Занятие изменено' : 'Занятие добавлено');
   } catch (error) {
     showFormErrors(error);
@@ -270,26 +301,30 @@ async function saveLesson(event) {
   }
 }
 
-async function deleteLesson(id) {
-  const lesson = lessons.find((item) => item.id === id);
-  if (!lesson || !window.confirm(`Удалить занятие «${lesson.title}»?`)) {
+async function deleteEntry(id) {
+  const entry = scheduleEntries.find((item) => item.id === id);
+  if (!entry || !window.confirm(`Удалить занятие «${entry.subject}»?`)) {
     return;
   }
 
   try {
-    await apiRequest(`/api/lessons/${id}`, { method: 'DELETE' });
-    await loadLessons();
+    await apiRequest(`/api/schedule/${id}`, { method: 'DELETE' });
+    await loadSchedule();
     showNotice('Занятие удалено');
   } catch (error) {
     showNotice(error.message, 'error');
   }
 }
 
-document.querySelector('#add-button').addEventListener('click', openCreateDialog);
-document.querySelector('#close-dialog').addEventListener('click', () => dialog.close());
-document.querySelector('#cancel-button').addEventListener('click', () => dialog.close());
-dayFilter.addEventListener('change', loadLessons);
+addButton.addEventListener('click', openCreateDialog);
+closeDialogButton.addEventListener('click', () => dialog.close());
+cancelButton.addEventListener('click', () => dialog.close());
+dayFilter.addEventListener('change', loadSchedule);
 form.addEventListener('submit', saveLesson);
+dialog.addEventListener('close', () => {
+  const target = document.contains(dialogReturnFocus) ? dialogReturnFocus : addButton;
+  target.focus();
+});
 
 schedule.addEventListener('click', (event) => {
   const button = event.target.closest('button[data-action]');
@@ -299,10 +334,10 @@ schedule.addEventListener('click', (event) => {
 
   const id = Number(button.dataset.id);
   if (button.dataset.action === 'edit') {
-    openEditDialog(id);
+    openEditDialog(id, button);
   } else if (button.dataset.action === 'delete') {
-    deleteLesson(id);
+    deleteEntry(id);
   }
 });
 
-loadLessons();
+loadSchedule();
