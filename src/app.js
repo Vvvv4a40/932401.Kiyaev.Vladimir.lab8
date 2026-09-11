@@ -1,7 +1,7 @@
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseDay, parseId, validateLesson } from './validation.js';
+import { parseDay, parseId, validateScheduleEntry } from './validation.js';
 
 const publicDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../public');
 
@@ -23,7 +23,7 @@ export function createApp({ store }) {
   app.disable('x-powered-by');
   app.use(express.json({ limit: '32kb' }));
 
-  app.get('/api/lessons', (req, res) => {
+  app.get('/api/schedule', (req, res) => {
     const filter = parseDay(req.query.day);
     if (!filter.valid) {
       return badRequest(res, 'День должен быть числом от 1 до 7');
@@ -31,7 +31,7 @@ export function createApp({ store }) {
     return res.json(store.list(filter.day));
   });
 
-  app.get('/api/lessons/:id', (req, res) => {
+  app.get('/api/schedule/:id', (req, res) => {
     const id = parseId(req.params.id);
     if (!id) {
       return badRequest(res, 'Некорректный идентификатор занятия');
@@ -44,23 +44,23 @@ export function createApp({ store }) {
     return res.json(lesson);
   });
 
-  app.post('/api/lessons', (req, res) => {
-    const validation = validateLesson(req.body);
+  app.post('/api/schedule', (req, res) => {
+    const validation = validateScheduleEntry(req.body);
     if (!validation.valid) {
       return badRequest(res, 'Проверьте заполненные поля', validation.fields);
     }
 
-    if (store.hasConflict(validation.lesson)) {
+    if (store.hasConflict(validation.entry)) {
       return badRequest(res, 'В это время уже есть другое занятие', {
         start_time: 'Выберите свободное время',
         end_time: 'Выберите свободное время'
       });
     }
 
-    return res.status(201).json(store.create(validation.lesson));
+    return res.status(201).json(store.create(validation.entry));
   });
 
-  app.put('/api/lessons/:id', (req, res) => {
+  app.put('/api/schedule/:id', (req, res) => {
     const id = parseId(req.params.id);
     if (!id) {
       return badRequest(res, 'Некорректный идентификатор занятия');
@@ -70,22 +70,22 @@ export function createApp({ store }) {
       return res.status(404).json({ error: 'Занятие не найдено' });
     }
 
-    const validation = validateLesson(req.body);
+    const validation = validateScheduleEntry(req.body);
     if (!validation.valid) {
       return badRequest(res, 'Проверьте заполненные поля', validation.fields);
     }
 
-    if (store.hasConflict(validation.lesson, id)) {
+    if (store.hasConflict(validation.entry, id)) {
       return badRequest(res, 'В это время уже есть другое занятие', {
         start_time: 'Выберите свободное время',
         end_time: 'Выберите свободное время'
       });
     }
 
-    return res.json(store.update(id, validation.lesson));
+    return res.json(store.update(id, validation.entry));
   });
 
-  app.delete('/api/lessons/:id', (req, res) => {
+  app.delete('/api/schedule/:id', (req, res) => {
     const id = parseId(req.params.id);
     if (!id) {
       return badRequest(res, 'Некорректный идентификатор занятия');

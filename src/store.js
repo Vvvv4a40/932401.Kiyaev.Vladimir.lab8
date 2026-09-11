@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 
-export class LessonStore {
+export class ScheduleStore {
   constructor(filename = ':memory:') {
     this.db = new Database(filename);
     this.db.pragma('foreign_keys = ON');
@@ -8,43 +8,43 @@ export class LessonStore {
       this.db.pragma('journal_mode = WAL');
     }
     this.db.exec(`
-      CREATE TABLE IF NOT EXISTS lessons (
+      CREATE TABLE IF NOT EXISTS schedule (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        teacher TEXT NOT NULL,
+        room TEXT NOT NULL,
         day INTEGER NOT NULL CHECK (day BETWEEN 1 AND 7),
         start_time TEXT NOT NULL,
         end_time TEXT NOT NULL,
-        cabinet TEXT NOT NULL,
-        color TEXT NOT NULL,
         CHECK (start_time < end_time)
       );
 
-      CREATE INDEX IF NOT EXISTS lessons_day_time_idx
-      ON lessons (day, start_time, end_time);
+      CREATE INDEX IF NOT EXISTS schedule_day_time_idx
+      ON schedule (day, start_time, end_time);
     `);
   }
 
   list(day) {
     if (day === undefined) {
       return this.db.prepare(`
-        SELECT id, title, day, start_time, end_time, cabinet, color
-        FROM lessons
-        ORDER BY day, start_time, title
+        SELECT id, subject, teacher, room, day, start_time, end_time
+        FROM schedule
+        ORDER BY day, start_time, subject
       `).all();
     }
 
     return this.db.prepare(`
-      SELECT id, title, day, start_time, end_time, cabinet, color
-      FROM lessons
+      SELECT id, subject, teacher, room, day, start_time, end_time
+      FROM schedule
       WHERE day = ?
-      ORDER BY start_time, title
+      ORDER BY start_time, subject
     `).all(day);
   }
 
   get(id) {
     return this.db.prepare(`
-      SELECT id, title, day, start_time, end_time, cabinet, color
-      FROM lessons
+      SELECT id, subject, teacher, room, day, start_time, end_time
+      FROM schedule
       WHERE id = ?
     `).get(id);
   }
@@ -52,7 +52,7 @@ export class LessonStore {
   hasConflict({ day, start_time, end_time }, excludedId) {
     let sql = `
       SELECT id
-      FROM lessons
+      FROM schedule
       WHERE day = @day
         AND start_time < @end_time
         AND end_time > @start_time
@@ -70,32 +70,32 @@ export class LessonStore {
     }));
   }
 
-  create(lesson) {
+  create(entry) {
     const result = this.db.prepare(`
-      INSERT INTO lessons (title, day, start_time, end_time, cabinet, color)
-      VALUES (@title, @day, @start_time, @end_time, @cabinet, @color)
-    `).run(lesson);
+      INSERT INTO schedule (subject, teacher, room, day, start_time, end_time)
+      VALUES (@subject, @teacher, @room, @day, @start_time, @end_time)
+    `).run(entry);
 
     return this.get(Number(result.lastInsertRowid));
   }
 
-  update(id, lesson) {
+  update(id, entry) {
     const result = this.db.prepare(`
-      UPDATE lessons
-      SET title = @title,
+      UPDATE schedule
+      SET subject = @subject,
+          teacher = @teacher,
+          room = @room,
           day = @day,
           start_time = @start_time,
-          end_time = @end_time,
-          cabinet = @cabinet,
-          color = @color
+          end_time = @end_time
       WHERE id = @id
-    `).run({ id, ...lesson });
+    `).run({ id, ...entry });
 
     return result.changes === 0 ? undefined : this.get(id);
   }
 
   remove(id) {
-    return this.db.prepare('DELETE FROM lessons WHERE id = ?').run(id).changes > 0;
+    return this.db.prepare('DELETE FROM schedule WHERE id = ?').run(id).changes > 0;
   }
 
   close() {

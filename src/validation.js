@@ -1,55 +1,56 @@
 const timePattern = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
-const colorPattern = /^#[0-9a-fA-F]{6}$/;
 
 function cleanText(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-export function validateLesson(body) {
-  const lesson = {
-    title: cleanText(body?.title),
+export function validateScheduleEntry(body) {
+  const entry = {
+    subject: cleanText(body?.subject),
+    teacher: cleanText(body?.teacher),
+    room: cleanText(body?.room),
     day: Number(body?.day),
     start_time: cleanText(body?.start_time),
-    end_time: cleanText(body?.end_time),
-    cabinet: cleanText(body?.cabinet),
-    color: cleanText(body?.color)
+    end_time: cleanText(body?.end_time)
   };
   const fields = {};
 
-  if (!lesson.title) {
-    fields.title = 'Укажите название занятия';
-  } else if (lesson.title.length > 80) {
-    fields.title = 'Название должно быть не длиннее 80 символов';
+  if (!entry.subject) {
+    fields.subject = 'Укажите предмет';
+  } else if (entry.subject.length > 80) {
+    fields.subject = 'Название предмета должно быть не длиннее 80 символов';
   }
 
-  if (!Number.isInteger(lesson.day) || lesson.day < 1 || lesson.day > 7) {
+  if (!entry.teacher) {
+    fields.teacher = 'Укажите преподавателя';
+  } else if (entry.teacher.length > 80) {
+    fields.teacher = 'Имя преподавателя должно быть не длиннее 80 символов';
+  }
+
+  if (!entry.room) {
+    fields.room = 'Укажите аудиторию';
+  } else if (entry.room.length > 30) {
+    fields.room = 'Аудитория должна быть не длиннее 30 символов';
+  }
+
+  if (!Number.isInteger(entry.day) || entry.day < 1 || entry.day > 7) {
     fields.day = 'Выберите день недели';
   }
 
-  if (!timePattern.test(lesson.start_time)) {
+  if (!timePattern.test(entry.start_time)) {
     fields.start_time = 'Укажите время начала';
   }
 
-  if (!timePattern.test(lesson.end_time)) {
+  if (!timePattern.test(entry.end_time)) {
     fields.end_time = 'Укажите время окончания';
   }
 
-  if (timePattern.test(lesson.start_time) && timePattern.test(lesson.end_time) && lesson.start_time >= lesson.end_time) {
+  if (timePattern.test(entry.start_time) && timePattern.test(entry.end_time) && entry.start_time >= entry.end_time) {
     fields.end_time = 'Окончание должно быть позже начала';
   }
 
-  if (!lesson.cabinet) {
-    fields.cabinet = 'Укажите аудиторию';
-  } else if (lesson.cabinet.length > 30) {
-    fields.cabinet = 'Название аудитории должно быть не длиннее 30 символов';
-  }
-
-  if (!colorPattern.test(lesson.color)) {
-    fields.color = 'Выберите цвет занятия';
-  }
-
   return {
-    lesson,
+    entry,
     fields,
     valid: Object.keys(fields).length === 0
   };
