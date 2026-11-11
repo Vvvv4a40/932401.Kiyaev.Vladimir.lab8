@@ -1,4 +1,7 @@
-node_modules/
+bin/
+obj/
+.vs/
+publish/
 data/*.db
 data/*.db-shm
 data/*.db-wal
